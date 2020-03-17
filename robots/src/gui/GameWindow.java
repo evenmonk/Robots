@@ -7,6 +7,10 @@ import javax.swing.JPanel;
 
 public class GameWindow extends JInternalFrame
 {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
     private final GameVisualizer m_visualizer;
     public GameWindow() 
     {

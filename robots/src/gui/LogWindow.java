@@ -13,6 +13,10 @@ import log.LogWindowSource;
 
 public class LogWindow extends JInternalFrame implements LogChangeListener
 {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
     private LogWindowSource m_logSource;
     private TextArea m_logContent;
 

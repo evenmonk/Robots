@@ -15,6 +15,10 @@ import javax.swing.JPanel;
 
 public class GameVisualizer extends JPanel
 {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
     private final Timer m_timer = initTimer();
     
     private static Timer initTimer() 
@@ -23,8 +27,8 @@ public class GameVisualizer extends JPanel
         return timer;
     }
     
-    private volatile double m_robotPositionX = 100;
-    private volatile double m_robotPositionY = 100; 
+    private volatile double m_robotPositionX = 150;
+    private volatile double m_robotPositionY = 150; 
     private volatile double m_robotDirection = 0; 
 
     private volatile int m_targetPositionX = 150;
