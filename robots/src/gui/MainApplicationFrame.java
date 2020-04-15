@@ -1,26 +1,16 @@
 package gui;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyVetoException;
 import java.io.*;
-
 import javax.swing.*;
-
 import log.Logger;
 
-/**
- * Что требуется сделать:
- * 1. Метод создания меню перегружен функционалом и трудно читается.
- * Следует разделить его на серию более простых методов (или вообще выделить отдельный класс).
- */
+
 public class MainApplicationFrame extends JFrame {
-    /**
-     *
-     */
     private static final long serialVersionUID = 1L;
     private final JDesktopPane desktopPane = new JDesktopPane();
-    private final File file = new File(System.getProperty("user.home") + "/windows.txt");
+    private final File file = new File(System.getProperty("user.home") + "/log.txt");
     private final WindowProperties mainWs = new WindowProperties("Main");
 
     public MainApplicationFrame() {
@@ -177,7 +167,7 @@ public class MainApplicationFrame extends JFrame {
                 JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
         if (reply == JOptionPane.YES_OPTION) {
             try (ObjectOutputStream oos = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(file)));) {
+                    new BufferedOutputStream(new FileOutputStream(file)))) {
                 oos.writeObject(mainWs);
                 final JInternalFrame[] frames = desktopPane.getAllFrames();
                 for (final JInternalFrame internalFrame : frames) {
@@ -261,9 +251,7 @@ public class MainApplicationFrame extends JFrame {
 
         {
             final JMenuItem addLogMessageItem = new JMenuItem("Сообщение в лог", KeyEvent.VK_S);
-            addLogMessageItem.addActionListener((event) -> {
-                Logger.debug("Новая строка");
-            });
+            addLogMessageItem.addActionListener((event) -> Logger.debug("Новая строка"));
             testMenu.add(addLogMessageItem);
         }
 
