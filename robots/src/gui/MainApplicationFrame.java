@@ -1,273 +1,149 @@
 package gui;
+
+import serialization.WindowStorage;
+
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.PropertyVetoException;
-import java.io.*;
 import javax.swing.*;
+import javax.swing.event.InternalFrameAdapter;
+import javax.swing.event.InternalFrameEvent;
+
 import log.Logger;
 
 
-public class MainApplicationFrame extends JFrame {
-    private static final long serialVersionUID = 1L;
-    private final JDesktopPane desktopPane = new JDesktopPane();
-    private final File file = new File(System.getProperty("user.home") + "/log.txt");
-    private final WindowProperties mainWs = new WindowProperties("Main");
+public class MainApplicationFrame extends JFrame implements Disposable {
+
+    private static final int INSET = 50;
+
+    private WindowStorage storage;
+    private JInternalFrame logWindow, gameWindow;
+
+    public MainApplicationFrame(WindowStorage storage) {
+        this();
+        this.storage = storage;
+        if (storage != null && storage.isRestored()) {
+            storage.restore(this.getClass().toString(), this);
+            storage.restore(logWindow.getClass().toString(), logWindow);
+            storage.restore(gameWindow.getClass().toString(), gameWindow);
+        } else {
+            setExtendedState(Frame.MAXIMIZED_BOTH);
+            pack();
+        }
+    }
 
     public MainApplicationFrame() {
-        // Make the big window be indented 50 pixels from each edge
-        // of the screen.
-        final int inset = 50;
-        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setBounds(inset, inset, screenSize.width - inset * 2, screenSize.height - inset * 2);
-
-        setContentPane(desktopPane);
-
-        setVisible(true);
-
-        boolean openLogWindow = false;
-        boolean openGameWindow = false;
-
-        final LogWindow logWindow = createLogWindow();
-        addWindow(logWindow);
-
-        final GameWindow gameWindow = new GameWindow();
-        addWindow(gameWindow);
-
-        if (file.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(file)))) {
-                while (true) {
-                    try {
-                        final WindowProperties ws = (WindowProperties) ois.readObject();
-                        switch (ws.getTitle()) {
-                            case "Main": {
-                                loadMainFrameState(ws);
-                                break;
-                            }
-                            case "Протокол работы": {
-                                openLogWindow = true;
-                                loadInternalFrameState(logWindow, ws);
-                                break;
-                            }
-                            case "Игровое поле": {
-                                openGameWindow = true;
-                                loadInternalFrameState(gameWindow, ws);
-                                break;
-                            }
-                        }
-                    } catch (final EOFException e) {
-                        break;
-                    } catch (final PropertyVetoException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        } else {
-            pack();
-            setExtendedState(MAXIMIZED_BOTH);
-            openGameWindow = true;
-            openLogWindow = true;
-            gameWindow.setSize(400, 400);
-            logWindow.setLocation(10, 10);
-            logWindow.setSize(300, 800);
-        }
-
-        try {
-            if (!openGameWindow)
-                gameWindow.setClosed(true);
-            if (!openLogWindow)
-                logWindow.setClosed(true);
-        } catch (final PropertyVetoException e) {
-            e.printStackTrace();
-        }
-
+        var screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setBounds(INSET, INSET, screenSize.width - INSET * 2, screenSize.height - INSET * 2);
+        setContentPane(new JDesktopPane());
         setJMenuBar(generateMenuBar());
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-
         addWindowListener(new WindowAdapter() {
             @Override
-            public void windowIconified(final WindowEvent e) {
-                mainWs.setIcon(true);
-            }
-
-            @Override
-            public void windowDeiconified(final WindowEvent e) {
-                mainWs.setIcon(false);
-                if (mainWs.isMaximum())
-                    setExtendedState(MAXIMIZED_BOTH);
-            }
-
-            @Override
-            public void windowClosing(final WindowEvent e) {
-                closeMainWindow();
+            public void windowClosing(WindowEvent e) {
+                onClose(MainApplicationFrame.this);
             }
         });
 
-        addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(final ComponentEvent e) {
-                mainWs.setSize(e.getComponent().getSize());
-                if (getExtendedState() == JFrame.MAXIMIZED_BOTH) {
-                    mainWs.setMaximum(true);
-                }
-                if (getExtendedState() == JFrame.NORMAL) {
-                    mainWs.setMaximum(false);
-                }
-            }
-
-            @Override
-            public void componentMoved(final ComponentEvent e) {
-                mainWs.setLocation(e.getComponent().getLocation());
-            }
-        });
-    }
-
-    private void loadMainFrameState(final WindowProperties ws) {
-        if (ws.isIcon()) {
-            if (ws.isMaximum())
-                mainWs.setMaximum(true);
-            setExtendedState(ICONIFIED);
-        } else {
-            if (ws.isMaximum())
-                setExtendedState(MAXIMIZED_BOTH);
-            else
-                setExtendedState(NORMAL);
-        }
-        setLocation(ws.getLocation());
-        setSize(ws.getSize());
-    }
-
-    private void loadInternalFrameState(final JInternalFrame internalFrame, final WindowProperties ws)
-            throws PropertyVetoException {
-        internalFrame.setLocation(ws.getLocation());
-        internalFrame.setSize(ws.getSize());
-        if (ws.isIcon())
-            internalFrame.setIcon(true);
-        else if (ws.isMaximum())
-            internalFrame.setMaximum(true);
-    }
-
-    protected LogWindow createLogWindow() {
-        final LogWindow logWindow = new LogWindow(Logger.getDefaultLogSource());
+        logWindow = createLogWindow();
+        addWindow(logWindow);
         setMinimumSize(logWindow.getSize());
-        logWindow.pack();
         Logger.debug("Протокол работает");
+
+        gameWindow = createGameWindow();
+        addWindow(gameWindow);
+    }
+
+    private LogWindow createLogWindow() {
+        var logWindow = new LogWindow(Logger.getDefaultLogSource());
+        logWindow.setLocation(10, 10);
+        logWindow.setSize(300, 800);
+        logWindow.pack();
+        logWindow.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        logWindow.addInternalFrameListener(new InternalFrameAdapter() {
+            @Override
+            public void internalFrameClosing(InternalFrameEvent e) {
+                onClose(logWindow);
+            }
+        });
         return logWindow;
     }
 
-    protected void addWindow(final JInternalFrame frame) {
-        desktopPane.add(frame);
-        frame.setVisible(true);
-    }
-
-    private void closeMainWindow() {
-        final Object[] options = { "Да", "Нет" };
-        final int reply = JOptionPane.showOptionDialog(null, "Вы уверены, что хотите выйти?", "Выход",
-                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-        if (reply == JOptionPane.YES_OPTION) {
-            try (ObjectOutputStream oos = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(file)))) {
-                oos.writeObject(mainWs);
-                final JInternalFrame[] frames = desktopPane.getAllFrames();
-                for (final JInternalFrame internalFrame : frames) {
-                    final WindowProperties ws = new WindowProperties(internalFrame.getTitle(),
-                            internalFrame.getLocation(), internalFrame.getSize(), internalFrame.isIcon(),
-                            internalFrame.isMaximum());
-                    oos.writeObject(ws);
-                }
-            } catch (final Exception e) {
-                e.printStackTrace();
+    private GameWindow createGameWindow() {
+        var gameWindow = new GameWindow();
+        gameWindow.setSize(400, 400);
+        gameWindow.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        gameWindow.addInternalFrameListener(new InternalFrameAdapter() {
+            @Override
+            public void internalFrameClosing(InternalFrameEvent e) {
+                onClose(gameWindow);
             }
-            System.exit(0);
-        }
-
+        });
+        return gameWindow;
     }
 
-    // protected JMenuBar createMenuBar() {
-    // JMenuBar menuBar = new JMenuBar();
-    //
-    // //Set up the lone menu.
-    // JMenu menu = new JMenu("Document");
-    // menu.setMnemonic(KeyEvent.VK_D);
-    // menuBar.add(menu);
-    //
-    // //Set up the first menu item.
-    // JMenuItem menuItem = new JMenuItem("New");
-    // menuItem.setMnemonic(KeyEvent.VK_N);
-    // menuItem.setAccelerator(KeyStroke.getKeyStroke(
-    // KeyEvent.VK_N, ActionEvent.ALT_MASK));
-    // menuItem.setActionCommand("new");
-    //// menuItem.addActionListener(this);
-    // menu.add(menuItem);
-    //
-    // //Set up the second menu item.
-    // menuItem = new JMenuItem("Quit");
-    // menuItem.setMnemonic(KeyEvent.VK_Q);
-    // menuItem.setAccelerator(KeyStroke.getKeyStroke(
-    // KeyEvent.VK_Q, ActionEvent.ALT_MASK));
-    // menuItem.setActionCommand("quit");
-    //// menuItem.addActionListener(this);
-    // menu.add(menuItem);
-    //
-    // return menuBar;
-    // }
+    private void addWindow(JInternalFrame frame) {
+        add(frame).setVisible(true);
+    }
 
     private JMenuBar generateMenuBar() {
-        final JMenuBar menuBar = new JMenuBar();
-        final JMenu exitMenu = new JMenu("Меню выхода");
+        var menuBar = new JMenuBar();
 
-        {
-            final JMenuItem exitButton = new JMenuItem("Закрыть приложение");
-            exitButton.addActionListener((event) -> closeMainWindow());
-            exitMenu.add(exitButton);
-        }
+        var lookAndFeelMenu = new MenuBuilder("Режим отображения")
+                .setMnemonic(KeyEvent.VK_S)
+                .setDescription("Управление режимом отображения приложения")
+                .addMenuItem("Системная схема", KeyEvent.VK_S,
+                        e -> setLookAndFeel(UIManager.getSystemLookAndFeelClassName()))
+                .addMenuItem("Универсальная схема", KeyEvent.VK_S,
+                        e -> setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()))
+                .build();
 
-        final JMenu lookAndFeelMenu = new JMenu("Режим отображения");
-        lookAndFeelMenu.setMnemonic(KeyEvent.VK_V);
-        lookAndFeelMenu.getAccessibleContext().setAccessibleDescription("Управление режимом отображения приложения");
+        var testMenu = new MenuBuilder("Тесты")
+                .setMnemonic(KeyEvent.VK_S)
+                .setDescription("Тестовые команды")
+                .addMenuItem("Сообщение в лог", KeyEvent.VK_S,
+                        e -> Logger.debug("Новая строка"))
+                .build();
 
-        {
-            final JMenuItem systemLookAndFeel = new JMenuItem("Системная схема", KeyEvent.VK_S);
-            systemLookAndFeel.addActionListener((event) -> {
-                setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                this.invalidate();
-            });
-            lookAndFeelMenu.add(systemLookAndFeel);
-        }
+        var fileMenu = new MenuBuilder("Файл")
+                .setMnemonic(KeyEvent.VK_F)
+                .addMenuItem("Выход", KeyEvent.VK_Q,
+                        e -> dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING)))
+                .build();
 
-        {
-            final JMenuItem crossplatformLookAndFeel = new JMenuItem("Универсальная схема", KeyEvent.VK_S);
-            crossplatformLookAndFeel.addActionListener((event) -> {
-                setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-                this.invalidate();
-            });
-            lookAndFeelMenu.add(crossplatformLookAndFeel);
-        }
-
-        final JMenu testMenu = new JMenu("Тесты");
-        testMenu.setMnemonic(KeyEvent.VK_T);
-        testMenu.getAccessibleContext().setAccessibleDescription("Тестовые команды");
-
-        {
-            final JMenuItem addLogMessageItem = new JMenuItem("Сообщение в лог", KeyEvent.VK_S);
-            addLogMessageItem.addActionListener((event) -> Logger.debug("Новая строка"));
-            testMenu.add(addLogMessageItem);
-        }
-
-        menuBar.add(exitMenu);
+        menuBar.add(fileMenu);
         menuBar.add(lookAndFeelMenu);
         menuBar.add(testMenu);
         return menuBar;
     }
 
-    private void setLookAndFeel(final String className) {
+    private void onClose(Disposable disposable) {
+        int confirmed = JOptionPane.showConfirmDialog(this,
+                "Вы точно хотите выйти?",
+                "Выход", JOptionPane.YES_NO_OPTION);
+
+        if (confirmed == JOptionPane.YES_OPTION) {
+            disposable.onDispose();
+        }
+    }
+
+    private void setLookAndFeel(String className) {
         try {
             UIManager.setLookAndFeel(className);
             SwingUtilities.updateComponentTreeUI(this);
-        } catch (ClassNotFoundException | InstantiationException
-                | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            invalidate();
+        } catch (ReflectiveOperationException | UnsupportedLookAndFeelException ignored) {
             // just ignore
+        }
+    }
+
+    @Override
+    public void onDispose() {
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        if (storage != null) {
+            storage.store(this.getClass().toString(), this);
+            storage.store(logWindow.getClass().toString(), logWindow);
+            storage.store(gameWindow.getClass().toString(), gameWindow);
+            storage.save();
         }
     }
 }

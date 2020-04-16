@@ -1,12 +1,13 @@
 package gui;
 
-import java.awt.Frame;
-
+import serialization.WindowStorage;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-public class RobotsProgram
-{
+public class RobotsProgram {
+
+    private static final String WINDOW_PATH = "window.ser";
+
     public static void main(String[] args) {
       try {
         UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -16,10 +17,7 @@ public class RobotsProgram
       } catch (Exception e) {
         e.printStackTrace();
       }
-      SwingUtilities.invokeLater(() -> {
-        MainApplicationFrame frame = new MainApplicationFrame();
-        frame.pack();
-        frame.setVisible(true);
-        frame.setExtendedState(Frame.MAXIMIZED_BOTH);
-      });
-    }}
+      var storage = new WindowStorage(WINDOW_PATH);
+      SwingUtilities.invokeLater(() -> new MainApplicationFrame(storage).setVisible(true));
+      }
+    }
