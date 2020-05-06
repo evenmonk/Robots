@@ -10,7 +10,7 @@ public class MathUtils {
     }
 
     static double angleTo(double fromX, double fromY, double toX, double toY) {
-        return asNormalizedRadians(Math.atan2(toY - fromY, toX - fromX));
+        return Math.atan2(toY - fromY, toX - fromX);
     }
 
     static double asNormalizedRadians(double angle) {
