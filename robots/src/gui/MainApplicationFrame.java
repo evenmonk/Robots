@@ -1,6 +1,7 @@
 package gui;
 
 import serialization.WindowStorage;
+import utils.Game;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -49,7 +50,9 @@ public class MainApplicationFrame extends JFrame implements Disposable {
         setMinimumSize(logWindow.getSize());
         Logger.debug("Протокол работает");
 
-        gameWindow = createGameWindow();
+        var game = new Game();
+
+        gameWindow = createGameWindow(game);
         addWindow(gameWindow);
     }
 
@@ -68,8 +71,8 @@ public class MainApplicationFrame extends JFrame implements Disposable {
         return logWindow;
     }
 
-    private GameWindow createGameWindow() {
-        var gameWindow = new GameWindow();
+    private GameWindow createGameWindow(Game game) {
+        var gameWindow = new GameWindow(game);
         gameWindow.setSize(400, 400);
         gameWindow.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         gameWindow.addInternalFrameListener(new InternalFrameAdapter() {

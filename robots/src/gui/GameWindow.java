@@ -1,19 +1,17 @@
 package gui;
 
 import java.awt.BorderLayout;
+import utils.Game;
 
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 
 public class GameWindow extends JInternalFrame implements Disposable
 {    
-    public GameWindow()
+    public GameWindow(Game game)
     {
         super("Игровое поле", true, true, true, true);
-        var visualizer = new GameVisualizer();
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(visualizer, BorderLayout.CENTER);
-        getContentPane().add(panel);
+        getContentPane().add(new GameVisualizer(game), BorderLayout.CENTER);
         pack();
     }
 
