@@ -1,9 +1,11 @@
 package utils;
 
-public class GameObject {
-    protected double x, y;
+import java.util.Observable;
 
-    public GameObject(double x, double y) {
+public class GameObject extends Observable {
+
+    double x,y;
+        GameObject(double x, double y) {
         this.x = x;
         this.y = y;
     }
