@@ -7,12 +7,12 @@ import java.awt.*;
 import java.util.Observable;
 
 @SuppressWarnings("deprecation")
-public class ObservationWindow extends JInternalFrame implements Disposable {
+public class CoordinatesWindow extends JInternalFrame implements Disposable {
 
     private GameObject gameObject;
     private JTextArea textArea;
 
-    ObservationWindow(GameObject gameObject) {
+    CoordinatesWindow(GameObject gameObject) {
         super("Координаты", true, true, true, true);
         this.gameObject = gameObject;
 
