@@ -2,18 +2,17 @@ package log;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.stream.Collectors;
+
 
 public class LogWindowSource {
 
-    private final Queue<LogEntry> messages;
+    private final LoggingStructure messages;
     private final List<LogChangeListener> listeners;
+    private volatile LogChangeListener[] m_activeListeners;
 
     public LogWindowSource(int queueLength) {
-        messages = new LinkedBlockingDeque<>(queueLength);
+        messages = new LoggingStructure(queueLength);
         listeners = new CopyOnWriteArrayList<>();
     }
 
@@ -26,8 +25,29 @@ public class LogWindowSource {
     }
 
     public void append(LogLevel logLevel, String strMessage) {
-        addEntry(logLevel, strMessage);
-        notifyListeners();
+        LogEntry entry = new LogEntry(logLevel, strMessage);
+        try {
+            messages.add(entry);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        LogChangeListener [] activeListeners = m_activeListeners;
+
+        if (activeListeners == null)
+        {
+            synchronized (listeners)
+            {
+                if (activeListeners == null)
+                {
+                    activeListeners = listeners.toArray(new LogChangeListener [0]);
+                    activeListeners = activeListeners;
+                }
+            }
+        }
+        for (LogChangeListener listener : activeListeners)
+        {
+            listener.onLogChanged();
+        }
     }
 
     public int size() {
@@ -35,27 +55,14 @@ public class LogWindowSource {
     }
 
     public Iterable<LogEntry> range(int startFrom, int count) {
-        if (startFrom < 0) {
+        if (startFrom < 0 || startFrom >= messages.size()) {
             return Collections.emptyList();
         }
-        return messages.stream()
-                    .skip(startFrom)
-                    .limit(count)
-                    .collect(Collectors.toList());
+        int indexTo = Math.min(startFrom + count, messages.size());
+        return messages.subList(startFrom, indexTo);
     }
 
     public Iterable<LogEntry> all() {
         return messages;
-    }
-
-    private void addEntry(LogLevel logLevel, String strMessage) {
-        var entry = new LogEntry(logLevel, strMessage);
-        while (!messages.offer(entry)) {
-            messages.poll();
-        }
-    }
-
-    private void notifyListeners() {
-        listeners.forEach(LogChangeListener::onLogChanged);
     }
 }
