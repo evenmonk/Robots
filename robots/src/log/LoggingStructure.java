@@ -3,11 +3,10 @@ package log;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class LoggingStructure implements Iterable<LogEntry>, Iterator<LogEntry>
+public class LoggingStructure implements Iterable<LogEntry>
 {
     private Node head;
     private Node tall;
-    private Node next;
     private final int maxSize;
     private int localSize = 0;
     private boolean isIterating = false;
@@ -34,7 +33,6 @@ public class LoggingStructure implements Iterable<LogEntry>, Iterator<LogEntry>
 
         else
             localSize++;
-        next = head;
     }
 
     public int size()
@@ -43,27 +41,29 @@ public class LoggingStructure implements Iterable<LogEntry>, Iterator<LogEntry>
     }
 
     @Override
-    public boolean hasNext() {
-        return next != null;
-    }
-
-    @Override
-    public LogEntry next() {
-        if(hasNext())
-        {
-            Node result = next;
-            next = next.next();
-            return result.message();
-        }
-        else throw new NoSuchElementException();
-    }
-
-    @Override
     public Iterator<LogEntry> iterator() {
-        return this;
+        return new Iterator<LogEntry>() {
+            private Node next = head;
+            @Override
+            public boolean hasNext() {
+                return next != null;
+            }
+
+            @Override
+            public LogEntry next() {
+                if(hasNext())
+                {
+                    Node result = next;
+                    next = next.next();
+                    return result.message();
+                }
+                else throw new NoSuchElementException();
+            }
+
+        };
     }
 
-    public Iterable<LogEntry> subList(int startFrom, int indexTo) {
+    public synchronized Iterable<LogEntry> subList(int startFrom, int indexTo) {
         isIterating = true;
         Iterator<LogEntry> iterator = new Iterator<>() {
             private int localIndex = 0;
@@ -71,8 +71,10 @@ public class LoggingStructure implements Iterable<LogEntry>, Iterator<LogEntry>
 
             @Override
             public boolean hasNext() {
-                while (localIndex < startFrom)
+                while (localIndex < startFrom) {
                     localHead = localHead.next();
+                    localIndex++;
+                }
                 boolean hasNext = localHead.next() != null && localIndex < indexTo;
                 if (hasNext)
                     return true;

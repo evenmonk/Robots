@@ -11,6 +11,7 @@ import javax.swing.event.InternalFrameEvent;
 
 import log.LogChangeListener;
 import log.LogWindowSource;
+import log.LogEntry;
 
 public class LogWindow extends JInternalFrame implements LogChangeListener, Disposable
 {
@@ -29,13 +30,6 @@ public class LogWindow extends JInternalFrame implements LogChangeListener, Disp
         getContentPane().add(panel);
         pack();
         updateLogContent();
-
-        addInternalFrameListener(new InternalFrameAdapter() {
-            @Override
-            public void internalFrameClosing(InternalFrameEvent e) {
-                logSource.unregisterListener(LogWindow.this);
-            }
-        });
     }
 
     private void updateLogContent() {
@@ -50,6 +44,10 @@ public class LogWindow extends JInternalFrame implements LogChangeListener, Disp
     {
         EventQueue.invokeLater(this::updateLogContent);
     }
+
+//    public FrameInfo getInfo() {
+//        return new FrameInfo(getWidth(), getHeight(), getLocation(), isMaximum(), isIcon());
+//    }
 
     @Override
     public void onDispose() {
