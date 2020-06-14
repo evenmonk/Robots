@@ -52,10 +52,6 @@ public class LogWindow extends JInternalFrame implements LogChangeListener, Disp
         tr.start();
     }
 
-//    public FrameInfo getInfo() {
-//        return new FrameInfo(getWidth(), getHeight(), getLocation(), isMaximum(), isIcon());
-//    }
-
     @Override
     public void onDispose() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);

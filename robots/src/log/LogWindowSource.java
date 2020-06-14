@@ -8,7 +8,6 @@ public class LogWindowSource {
     private int m_iQueueLength;
 
     private final LoggingStructure m_messages;
-    //private final ArrayList<LogChangeListener> m_listeners;
     private ArrayList<LogChangeListener> m_activeListeners;
 
     public LogWindowSource(int iQueueLength) {
@@ -38,19 +37,7 @@ public class LogWindowSource {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        LogChangeListener [] activeListeners = m_activeListeners;
-//
-//        if (activeListeners == null)
-//        {
-//            synchronized (m_listeners)
-//            {
-//                if (m_activeListeners == null)
-//                {
-//                    activeListeners = m_listeners.toArray(new LogChangeListener [0]);
-//                    m_activeListeners = activeListeners;
-//                }
-//            }
-//        }
+
         for (LogChangeListener listener : m_activeListeners)
         {
             listener.onLogChanged();
